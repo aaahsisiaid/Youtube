@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>YT Worker Search</title>
+    <style>
+        body { font-family: sans-serif; background: #f9f9f9; text-align: center; }
+        #video-container { margin-top: 20px; }
+        .video-item { margin-bottom: 20px; cursor: pointer; border: 1px solid #ccc; padding: 10px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <h1>YouTube Search & View</h1>
+    <input type="text" id="searchInput" placeholder="検索ワードを入力">
+    <button onclick="searchVideos()">検索</button>
+
+    <div id="results"></div>
+    <div id="video-container">
+        <div id="player"></div>
+    </div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <script>
+        let player;
+        const WORKER_URL = "https://calm-star-b765.a6068376.workers.dev/";
+
+        async function searchVideos() {
+            const q = document.getElementById('searchInput').value;
+            const res = await fetch(`${WORKER_URL}?q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            data.items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'video-item';
+                div.innerHTML = `
+                    <img src="${item.snippet.thumbnails.default.url}"><br>
+                    <small>${item.snippet.title}</small>
+                `;
+                div.onclick = () => loadVideo(item.id.videoId);
+                resultsDiv.appendChild(div);
+            });
+        }
+
+        // プレイヤーの動的生成
+        function loadVideo(videoId) {
+            if (player) {
+                player.loadVideoById(videoId);
+            } else {
+                player = new YT.Player('player', {
+                    height: '360',
+                    width: '640',
+                    videoId: videoId,
+                    events: {
+                        'onReady': (event) => event.target.playVideo()
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
